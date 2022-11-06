@@ -7,7 +7,7 @@ This library allows you to check if Steam is installed, the Steam install path, 
 ## Usage
 Code examples in C#
 - Download the latest release from the releases tab.
-- (Only required if downloaded from releases) Add a reference of the library in your project. (Project -> Add Reference... -> Browse -> Browse...)
+  - (Only required if downloaded from releases) Add a reference of the library in your project. (Project -> Add Reference... -> Browse -> Browse...)
 - Import in to your program
 ```c#
 using Narod.SteamGameFinder;
