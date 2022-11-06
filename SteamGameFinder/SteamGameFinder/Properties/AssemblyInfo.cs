@@ -5,12 +5,12 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("SteamGameFinder")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyTitle("Narod's Steam Game Finder")]
+[assembly: AssemblyDescription("A simple library for locating Steam & Games.")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Home")]
+[assembly: AssemblyCompany("NarodGaming")]
 [assembly: AssemblyProduct("SteamGameFinder")]
-[assembly: AssemblyCopyright("Copyright © Home 2022")]
+[assembly: AssemblyCopyright("NarodGaming 2022")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

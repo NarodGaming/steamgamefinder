@@ -19,6 +19,9 @@ namespace Narod
             private List<string> steamLibraryList = new List<string>();
             private List<GameStruct> steamGameList = new List<GameStruct>();
 
+            /// <summary>
+            /// A struct holding properties on games
+            /// </summary>
             public struct GameStruct
             {
                 public string steamGameID;
