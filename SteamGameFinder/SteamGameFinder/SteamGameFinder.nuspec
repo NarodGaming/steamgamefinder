@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package >
+  <metadata>
+    <id>Narod.SteamGameFinder</id>
+    <version>1.0.0</version>
+    <title>Steam Game Finder</title>
+    <authors>NarodGaming</authors>
+    <summary>A simple library for finding Steam and Games.</summary>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <license type="expression">MIT</license>
+    <!-- <icon>icon.png</icon> -->
+    <projectUrl>https://github.com/NarodGaming/steamgamefinder</projectUrl>
+    <description>A simple library for finding Steam and Games.</description>
+    <releaseNotes>First release.</releaseNotes>
+    <copyright>NarodGaming 2022</copyright>
+    <tags>library csharp finder steam</tags>
+  </metadata>
+</package>
