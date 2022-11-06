@@ -85,6 +85,8 @@ namespace Narod
             {
                 if (steamLibraryList.Count != 0) { return steamLibraryList; } // if this information is already stored, let's use that instead
 
+                if(steamInstallPath == null) { getSteamInstallLocation(); } // if the steam install path has not already been fetched, fetch it
+
                 StreamReader libraryVDFReader = File.OpenText(steamInstallPath + "\\steamapps\\libraryfolders.vdf");
                 string lineReader = libraryVDFReader.ReadLine();
                 bool continueRead = true;
@@ -135,6 +137,8 @@ namespace Narod
                 GameStruct gameInfo = new GameStruct();
                 gameInfo.steamGameName = gameName;
                 gameInfo.steamGameID = "0"; // not used
+
+                if (steamLibraryList.Count == 0) { getSteamLibraryLocations(); } // if steam library locations are not set-up, fetch them
 
                 foreach (string libraryFolder in steamLibraryList)
                 {
