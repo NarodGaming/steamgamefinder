@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>Narod.SteamGameFinder</id>
-    <version>1.0.1</version>
+    <version>2.0.0</version>
     <title>Steam Game Finder</title>
     <authors>NarodGaming</authors>
     <summary>A simple library for finding Steam and Games.</summary>
@@ -11,8 +11,8 @@
     <!-- <icon>icon.png</icon> -->
     <projectUrl>https://github.com/NarodGaming/steamgamefinder</projectUrl>
     <description>A simple library for finding Steam and Games.</description>
-    <releaseNotes>Fix 2 critical bugs caused by inadequate checks in stored variables.</releaseNotes>
-    <copyright>NarodGaming 2022</copyright>
+    <releaseNotes>Add .NET 8.0 support and Steam Game ID searching.</releaseNotes>
+    <copyright>NarodGaming 2025</copyright>
     <tags>library csharp finder steam</tags>
   </metadata>
 </package>
