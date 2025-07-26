@@ -30,8 +30,10 @@ namespace TestApp
                     Console.WriteLine("Library: " + path);
                 }
                 System.Threading.Thread.Sleep(1000);
-                Console.WriteLine("Checking if Cities Skylines is installed");
-                Console.WriteLine("Cities Skylines install path: " + steamGameLocator.getGameInfoByFolder("Cities_Skylines").steamGameLocation);
+                Console.WriteLine("Checking if Fallout 3 GOTY is installed");
+                Console.WriteLine("Fallout 3 GOTY install path: " + steamGameLocator.getGameInfoByFolder("Fallout 3 goty").steamGameLocation);
+                Console.WriteLine("Checking if The Binding of Isaac: Rebirth is installed");
+                Console.WriteLine("The Binding of Isaac: Rebirth install path: " + steamGameLocator.getGameInfoByID("250900").steamGameLocation);
                 Console.WriteLine("Tests complete.");
                 System.Threading.Thread.Sleep(10000);
             }

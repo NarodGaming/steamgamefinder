@@ -15,7 +15,7 @@ namespace Narod
             private static readonly string steamRegPath = "HKEY_LOCAL_MACHINE\\SOFTWARE\\Wow6432Node\\Valve\\Steam"; // not compatible with 32-bit
 
             private bool? steamInstalled = null;
-            private string steamInstallPath = null;
+            private string? steamInstallPath = null;
             private List<string> steamLibraryList = new List<string>();
             private List<GameStruct> steamGameList = new List<GameStruct>();
 
@@ -41,7 +41,7 @@ namespace Narod
                 if (steamInstalled != null) { return (bool)steamInstalled; } // if this information is already stored, let's use that instead
                 try // try statement, this could fail due to registry errors, or if the user does not have admin perms
                 {
-                    string steamInstallPath = RegistryHandler.safeGetRegistryKey("InstallPath", steamRegPath); // uses a safe way of getting the registry key
+                    string? steamInstallPath = RegistryHandler.safeGetRegistryKey("InstallPath", steamRegPath); // uses a safe way of getting the registry key
                     if (steamInstallPath == null) { steamInstalled = false; return (bool)steamInstalled; } // if the safe registry returner is null, then steam is not installed
                     if (Directory.Exists(steamInstallPath) == false) { steamInstalled = false; return (bool)steamInstalled; } // if the folder location in the registry key is not on the system, then steam is not installed
                 }
@@ -85,10 +85,10 @@ namespace Narod
             {
                 if (steamLibraryList.Count != 0) { return steamLibraryList; } // if this information is already stored, let's use that instead
 
-                if(steamInstallPath == null) { getSteamInstallLocation(); } // if the steam install path has not already been fetched, fetch it
+                if (steamInstallPath == null) { getSteamInstallLocation(); } // if the steam install path has not already been fetched, fetch it
 
                 StreamReader libraryVDFReader = File.OpenText(steamInstallPath + "\\steamapps\\libraryfolders.vdf");
-                string lineReader = libraryVDFReader.ReadLine();
+                string? lineReader = libraryVDFReader.ReadLine();
                 bool continueRead = true;
                 while (continueRead)
                 {
@@ -97,7 +97,7 @@ namespace Narod
                         try
                         {
                             lineReader = libraryVDFReader.ReadLine(); // waiting to read in a line that looks like: "path"      "C:\location\to\library\folder"
-                            if(lineReader == null) { break; }
+                            if (lineReader == null) { break; }
                         }
                         catch (Exception) // End of file exception
                         {
@@ -105,7 +105,7 @@ namespace Narod
                             break; // break this loop
                         }
                     }
-                    if(lineReader == null) { break; }
+                    if (lineReader == null) { break; }
                     string cleanLine = lineReader.Replace("\"path\"", ""); // we then clean this up by removing the path part, leaving us with:         "C:\location\to\library\folder"
                     cleanLine = cleanLine.Split('"')[1]; // we then remove the leading spaces and quotes to get: C:\location\to\library\folder"
                     cleanLine = cleanLine.Replace("\"", ""); // we then remove the last quote to get: C:\location\to\library\folder
@@ -173,10 +173,10 @@ namespace Narod
                 foreach (string libraryFolder in steamLibraryList)
                 {
                     string checkFile = libraryFolder + "\\steamapps\\appmanifest_" + gameID + ".acf";
-                    if(File.Exists(checkFile))
+                    if (File.Exists(checkFile))
                     {
                         StreamReader gameManifestReader = File.OpenText(checkFile);
-                        string lineReader = gameManifestReader.ReadLine();
+                        string? lineReader = gameManifestReader.ReadLine();
                         while (lineReader != null)
                         {
                             if (lineReader.Contains("name")) // looks like: "name"		"Game Name"
