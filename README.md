@@ -1,8 +1,15 @@
 # Narod's Steam Game Finder
-A C# library compatible back to Windows 7, which finds Steam and Games.
+A C# library compatible back to Windows 7 (.NET 3.5 edition) & modern .NET platforms (.NET 8.0 edition), which finds Steam and Games.
 
 ## Summary
 This library allows you to check if Steam is installed, the Steam install path, the Steam library paths, and locate game install directories.
+
+## Which edition should I use?
+You should really use the .NET 8.0 version (SteamGameFinder2) unless you require legacy support with pre-Windows 10 operating systems.
+
+The .NET 8.0 version will also work much better on macOS & Linux platforms, as well as being more secure and performant on Windows 10 & 11 systems.
+
+With that said, the two versions operate identically with the same feature set and very similar codebase. They are also both maintained at present.
 
 ## Usage
 Code examples in C#
@@ -32,21 +39,22 @@ List<string> paths = steamGameLocator.getSteamLibraryLocations();
 ```c#
 string steamGameInstallDir = steamGameLocator.getGameInfoByFolder("SteamGameFolderName").steamGameLocation
 ```
+- Get Steam Game Install Path by ID
+```c#
+string steamGameIDInstallDir = steamGameLocator.getGameInfoByID("0000").steamGameLocation
+```
 
 ## Limitations
-You can only search for Steam games by their installed folder name. For example, the game 'Cities: Skylines' is installed to 'Cities_Skylines', for example:
+If you use `getGameInfoByFolder`, you can only search for Steam games by their installed folder name. For example, the game 'Cities: Skylines' is installed to 'Cities_Skylines':
 ```c#
 string citiesSkylinesInstallDir = steamGameLocator.getGameInfoByFolder("Cities_Skylines").steamGameLocation
 ```
-I will look to improve this to allow human readable game names, or Steam app ID's in the future.
+You can use Steam Game IDs to make this easier to locate. Steam Game name searching may be added later, but it's much slower than the currently added operations.
 
 ## Further Help
-I'll release a video at some point detailing how to use this. You can find the 'TestApp' solution in this repository which has an example of how to use the library.
+You can find the 'TestApp' solution in this repository which has an example of how to use the library.
 
 ## Helping
 If you find any bugs, please report it as an issue.
 
-To-do:
-- Implement Steam App ID as a method of finding a game
-- Implement human readable game name as a method of finding a game
-- Fix issues/bugs
+I would also appreciate any extra functionality, feel free to open a PR request.
