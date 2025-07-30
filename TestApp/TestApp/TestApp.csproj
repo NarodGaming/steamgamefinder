@@ -34,7 +34,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="SteamGameFinder">
-      <HintPath>..\..\SteamGameFinder\SteamGameFinder\bin\Debug\SteamGameFinder.dll</HintPath>
+      <HintPath>..\..\SteamGameFinder\SteamGameFinder\bin\Release\SteamGameFinder.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />

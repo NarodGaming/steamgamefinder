@@ -12,12 +12,25 @@ namespace Narod
     {
         public class SteamGameLocator
         {
-            private static readonly string steamRegPath = "HKEY_LOCAL_MACHINE\\SOFTWARE\\Wow6432Node\\Valve\\Steam"; // not compatible with 32-bit
+            private static string steamRegPath = "";
 
             private bool? steamInstalled = null;
             private string steamInstallPath = null;
             private List<string> steamLibraryList = new List<string>();
             private List<GameStruct> steamGameList = new List<GameStruct>();
+
+            public SteamGameLocator()
+            {
+                // check if system is 32-bit or 64-bit, and set the registry path accordingly, Environ,ent.Is64BitOperatingSystem is unavailable in .NET 3.5
+                if (IntPtr.Size == 8 || Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE") == "AMD64")
+                {
+                    steamRegPath = "HKEY_LOCAL_MACHINE\\SOFTWARE\\Wow6432Node\\Valve\\Steam"; // 64-bit registry path
+                }
+                else
+                {
+                    steamRegPath = "HKEY_LOCAL_MACHINE\\SOFTWARE\\Valve\\Steam"; // 32-bit registry path
+                }
+            }
 
             /// <summary>
             /// A struct holding properties on games
@@ -30,11 +43,12 @@ namespace Narod
             }
 
             /// <summary>
-            /// Returns a bool of whether Steam is installed or not.
+            /// Checks if Steam is installed on the system by querying the Windows registry, and returns a boolean value.
             /// </summary>
             /// <returns>
-            /// True = Steam is installed. False = Steam is not installed.
+            /// A <see cref="bool"/> indicating whether Steam is installed on the system.
             /// </returns>
+            /// <remarks>This method only checks once, and then returns a cached result on subsequent runs.</remarks>
             /// <exception cref="SecurityException">Thrown if unsufficient permissions to check Steam install.</exception>
             public bool getIsSteamInstalled() // function to return a boolean of whether steam is installed or not
             {
@@ -53,11 +67,12 @@ namespace Narod
             }
 
             /// <summary>
-            /// Returns a string of the location of where steam is installed.
+            /// Checks the registry for the Steam install location and returns it.
             /// </summary>
             /// <returns>
-            /// string - the full file path of where Steam is installed.
+            /// A <see cref="string"/> of the full file path of where Steam is installed.
             /// </returns>
+            /// <remarks>This method only indexes the Steam install location once, and then returns a cached copy on subsequent runs.</remarks>
             /// <exception cref="DirectoryNotFoundException">Thrown if Steam is not installed.</exception>
             /// <exception cref="SecurityException">Thrown if unsufficient permissions to check Steam install path.</exception>
             public string getSteamInstallLocation()
@@ -76,16 +91,17 @@ namespace Narod
             }
 
             /// <summary>
-            /// Returns a list of strings with the locations of Steam library folders.
+            /// Indexes all Steam library locations, and returns a list of their full file paths.
             /// </summary>
             /// <returns>
-            /// List of strings with the full file location of the library folder.
+            /// A <see cref="List{T}"/> of <see cref="string"/> containing the full file paths of all Steam library locations.
             /// </returns>
+            /// <remarks>This method only indexes the library locations once, and then returns a cached copy on subsequent runs.</remarks>
             public List<String> getSteamLibraryLocations()
             {
                 if (steamLibraryList.Count != 0) { return steamLibraryList; } // if this information is already stored, let's use that instead
 
-                if(steamInstallPath == null) { getSteamInstallLocation(); } // if the steam install path has not already been fetched, fetch it
+                if (steamInstallPath == null) { getSteamInstallLocation(); } // if the steam install path has not already been fetched, fetch it
 
                 StreamReader libraryVDFReader = File.OpenText(steamInstallPath + "\\steamapps\\libraryfolders.vdf");
                 string lineReader = libraryVDFReader.ReadLine();
@@ -97,7 +113,7 @@ namespace Narod
                         try
                         {
                             lineReader = libraryVDFReader.ReadLine(); // waiting to read in a line that looks like: "path"      "C:\location\to\library\folder"
-                            if(lineReader == null) { break; }
+                            if (lineReader == null) { break; }
                         }
                         catch (Exception) // End of file exception
                         {
@@ -105,7 +121,7 @@ namespace Narod
                             break; // break this loop
                         }
                     }
-                    if(lineReader == null) { break; }
+                    if (lineReader == null) { break; }
                     string cleanLine = lineReader.Replace("\"path\"", ""); // we then clean this up by removing the path part, leaving us with:         "C:\location\to\library\folder"
                     cleanLine = cleanLine.Split('"')[1]; // we then remove the leading spaces and quotes to get: C:\location\to\library\folder"
                     cleanLine = cleanLine.Replace("\"", ""); // we then remove the last quote to get: C:\location\to\library\folder
@@ -118,64 +134,25 @@ namespace Narod
             }
 
             /// <summary>
-            /// Returns the install path of a game, by it's Steam install folder.
+            /// Indexes Steam games by scanning Steam library folders and extracting game information.
             /// </summary>
-            /// <param name="gameName">The name of the folder Steam installs the game to.</param>
-            /// <returns>
-            /// GameStruct - useful properties being steamGameName and steamGameLocation.
-            /// </returns>
-            /// <exception cref="DirectoryNotFoundException">Thrown if the game is not installed.</exception>
-            public GameStruct getGameInfoByFolder(string gameName)
+            /// <remarks>This method clears the current list of indexed games and scans all configured
+            /// Steam library folders to identify installed games. It reads the appmanifest files in each library folder
+            /// to retrieve the game's name, ID, and installation directory. The indexed game information is stored in a
+            /// list.</remarks>
+            public void indexSteamGames()
             {
-                if (steamGameList.Count != 0)
-                {
-                    foreach (GameStruct steamGame in steamGameList)
-                    {
-                        if (steamGame.steamGameName == gameName) { return steamGame; } // if game is already stored in our list, just return that instead
-                    }
-                }
-                GameStruct gameInfo = new GameStruct();
-                gameInfo.steamGameName = gameName;
-                gameInfo.steamGameID = "0"; // not used
-
-                if (steamLibraryList.Count == 0) { getSteamLibraryLocations(); } // if steam library locations are not set-up, fetch them
+                steamGameList.Clear();
+                getSteamLibraryLocations(); // ensure we have the library locations before indexing games
 
                 foreach (string libraryFolder in steamLibraryList)
                 {
-                    string checkFolder = libraryFolder + "\\steamapps\\common\\" + gameName;
-
-                    if (Directory.Exists(checkFolder)) { gameInfo.steamGameLocation = checkFolder; break; }
-                }
-
-                if (gameInfo.steamGameLocation != null) { return gameInfo; }
-
-                throw new DirectoryNotFoundException(); // throw an exception to alert user that game is not installed
-            }
-
-            /// <summary>
-            /// Returns the install path & name of a game, by its Steam ID.
-            /// </summary>
-            /// <param name="gameID">The Steam ID of the game you want to look for.</param>
-            /// <returns></returns>
-            /// <exception cref="FileNotFoundException">Thrown if the game is not installed.</exception>
-            public GameStruct getGameInfoByID(string gameID)
-            {
-                if (steamGameList.Count != 0)
-                {
-                    foreach (GameStruct steamGame in steamGameList)
+                    List<string> gameFiles = Directory.GetFiles(libraryFolder + "\\steamapps", "appmanifest_*.acf").ToList(); // get all the appmanifest files in the steamapps folder
+                    foreach (string gameFile in gameFiles)
                     {
-                        if (steamGame.steamGameID == gameID) { return steamGame; } // if game is already stored in our list, just return that instead
-                    }
-                }
-                GameStruct gameInfo = new GameStruct();
-                gameInfo.steamGameID = gameID;
-                if (steamLibraryList.Count == 0) { getSteamLibraryLocations(); } // if steam library locations are not set-up, fetch them
-                foreach (string libraryFolder in steamLibraryList)
-                {
-                    string checkFile = libraryFolder + "\\steamapps\\appmanifest_" + gameID + ".acf";
-                    if(File.Exists(checkFile))
-                    {
-                        StreamReader gameManifestReader = File.OpenText(checkFile);
+                        GameStruct gameInfo = new GameStruct();
+                        gameInfo.steamGameID = Path.GetFileNameWithoutExtension(gameFile).Replace("appmanifest_", ""); // get the ID from the file name
+                        StreamReader gameManifestReader = File.OpenText(gameFile);
                         string lineReader = gameManifestReader.ReadLine();
                         while (lineReader != null)
                         {
@@ -191,13 +168,87 @@ namespace Narod
                                 cleanLine = cleanLine.Split('"')[1]; // we then remove the leading spaces and quotes to get: Game Folder Name
                                 gameInfo.steamGameLocation = libraryFolder + "\\steamapps\\common\\" + cleanLine; // set the location
                             }
+                            if (gameInfo.steamGameName != null && gameInfo.steamGameLocation != null) { break; } // if we have both the name and location, we can stop reading the file
                             lineReader = gameManifestReader.ReadLine(); // read next line
                         }
-                        break; // break out of the loop as we have found the game
+                        steamGameList.Add(gameInfo); // add the game to our list
                     }
                 }
-                if (gameInfo.steamGameLocation != null) { return gameInfo; }
-                throw new FileNotFoundException(); // throw an exception to alert user that game is not installed
+            }
+
+            /// <summary>
+            /// Returns the install path, name & ID of a game, by its Steam install folder.
+            /// </summary>
+            /// <remarks>If the game list has not been indexed yet, this method with automatically
+            /// index the games before searching for this game. Subsequent calls will check the already indexed
+            /// list.</remarks>
+            /// <param name="gameName">The name of the folder Steam installs the game to.</param>
+            /// <returns>A single <see cref="GameStruct"/> object of the game.</returns>
+            /// <exception cref="DirectoryNotFoundException">Thrown if the game is not installed.</exception>
+            public GameStruct getGameInfoByFolder(string gameName)
+            {
+                if (steamGameList.Count == 0) { indexSteamGames(); } // if the game list is empty, index the games first
+
+                foreach (GameStruct steamGame in steamGameList)
+                {
+                    if (steamGame.steamGameLocation.EndsWith(gameName)) { return steamGame; } // if game is already stored in our list, just return that instead
+                }
+
+                throw new DirectoryNotFoundException("Game not found in Steam library. Please ensure the game is installed and try again."); // if we reach here, then the game was not found in our list, so throw an exception
+            }
+
+            /// <summary>
+            /// Returns the install path, name & ID of a game, by its Steam ID.
+            /// </summary>
+            /// <remarks>If the game list has not been indexed yet, this method with automatically
+            /// index the games before searching for this game. Subsequent calls will check the already indexed
+            /// list.</remarks>
+            /// <param name="gameID">The Steam ID of the game you want to look for.</param>
+            /// <returns>A single <see cref="GameStruct"/> object of the game.</returns>
+            /// <exception cref="FileNotFoundException">Thrown if the game is not installed.</exception>
+            public GameStruct getGameInfoByID(string gameID)
+            {
+                if (steamGameList.Count == 0) { indexSteamGames(); } // if the game list is empty, index the games first
+
+                foreach (GameStruct steamGame in steamGameList)
+                {
+                    if (steamGame.steamGameID == gameID) { return steamGame; } // if game is already stored in our list, just return that instead
+                }
+
+                throw new DirectoryNotFoundException("Game not found in Steam library. Please ensure the game is installed and try again."); // if we reach here, then the game was not found in our list, so throw an exception
+            }
+
+            /// <summary>
+            /// Returns the install path, name & ID of a game, by its Steam name.
+            /// </summary>
+            /// <remarks>If the game list has not been indexed yet, this method with automatically
+            /// index the games before searching for this game. Subsequent calls will check the already indexed
+            /// list.</remarks>
+            /// <param name="gameName">The Steam game name of what you want to look for.</param>
+            /// <returns>A single <see cref="GameStruct"/> object of the game.</returns>
+            /// <exception cref="DirectoryNotFoundException">Thrown if game is not installed.</exception>
+            public GameStruct getGameInfoByName(string gameName)
+            {
+                if (steamGameList.Count == 0) { indexSteamGames(); } // if the game list is empty, index the games first
+                foreach (GameStruct steamGame in steamGameList)
+                {
+                    if (steamGame.steamGameName == gameName) { return steamGame; } // if game is already stored in our list, just return that instead
+                }
+                throw new DirectoryNotFoundException("Game not found in Steam library. Please ensure the game is installed and try again."); // if we reach here, then the game was not found in our list, so throw an exception
+            }
+
+            /// <summary>
+            /// Retrieves a list of all indexed Steam games.
+            /// </summary>
+            /// <remarks>If the game list has not been indexed yet, this method will automatically
+            /// index the games before returning the list. Subsequent calls will return the already indexed
+            /// list.</remarks>
+            /// <returns>A <see cref="List{T}"/> of <see cref="GameStruct"/> objects representing the indexed games. If no games are available,
+            /// the <see cref="List{T}"/> will be empty.</returns>
+            public List<GameStruct> getAllGames()
+            {
+                if (steamGameList.Count == 0) { indexSteamGames(); } // if the game list is empty, index the games first
+                return steamGameList; // return the list of games
             }
         }
     }
