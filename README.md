@@ -5,11 +5,11 @@ A C# library compatible back to Windows 7 (.NET 3.5 edition) & modern .NET platf
 This library allows you to check if Steam is installed, the Steam install path, the Steam library paths, and locate game install directories.
 
 ## Which edition should I use?
-You should really use the .NET 8.0 version (SteamGameFinder2) unless you require legacy support with pre-Windows 10 operating systems.
+If you use the Nuget package manager, the versions are handled automatically for you - no further action required. The two versions behave identically regardless.
 
-The .NET 8.0 version will also work much better on macOS & Linux platforms, as well as being more secure and performant on Windows 10 & 11 systems.
+For .NET 8.0+ users, use SteamGameFinder2.dll
 
-With that said, the two versions operate identically with the same feature set and very similar codebase. They are also both maintained at present.
+For .NET 3.5+ users, use SteamGameFinder.dll
 
 ## Usage
 Code examples in C#
@@ -43,13 +43,14 @@ string steamGameInstallDir = steamGameLocator.getGameInfoByFolder("SteamGameFold
 ```c#
 string steamGameIDInstallDir = steamGameLocator.getGameInfoByID("0000").steamGameLocation
 ```
-
-## Limitations
-If you use `getGameInfoByFolder`, you can only search for Steam games by their installed folder name. For example, the game 'Cities: Skylines' is installed to 'Cities_Skylines':
+- Get Steam Game Install Path by Name
 ```c#
-string citiesSkylinesInstallDir = steamGameLocator.getGameInfoByFolder("Cities_Skylines").steamGameLocation
+string steamGameNameInstallDir = steamGameLocator.getGameInfoByName("Tropico 6").steamGameLocation
 ```
-You can use Steam Game IDs to make this easier to locate. Steam Game name searching may be added later, but it's much slower than the currently added operations.
+- Return all installed games
+```c#
+List<string> allSteamInstalledGames = steamGameLocator.getAllGames()
+```
 
 ## Further Help
 You can find the 'TestApp' solution in this repository which has an example of how to use the library.
