@@ -20,6 +20,8 @@ namespace Narod
             private List<string> steamLibraryList = new List<string>();
             private List<GameStruct> steamGameList = new List<GameStruct>();
 
+            private bool hasIndexed = false;
+
             public SteamGameLocator() {
                 // check if system is 32-bit or 64-bit, and set the registry path accordingly
                 if (Environment.Is64BitOperatingSystem)
@@ -77,6 +79,7 @@ namespace Narod
             /// <exception cref="SecurityException">Thrown if unsufficient permissions to check Steam install path.</exception>
             public string getSteamInstallLocation()
             {
+                if (steamInstalled == false) { throw new DirectoryNotFoundException(); } // if already checked if steam is installed and it isn't
                 if (steamInstallPath != null && Directory.Exists(steamInstallPath)) { return steamInstallPath; } // if this information is already stored, let's use that instead
                 try // try statement, this could fail due to registry errors, or if the user does not have admin perms
                 {
@@ -174,6 +177,7 @@ namespace Narod
                         steamGameList.Add(gameInfo); // add the game to our list
                     }
                 }
+                hasIndexed = true;
             }
 
             /// <summary>
@@ -187,7 +191,7 @@ namespace Narod
             /// <exception cref="DirectoryNotFoundException">Thrown if the game is not installed.</exception>
             public GameStruct getGameInfoByFolder(string gameName)
             {
-                if (steamGameList.Count == 0) { indexSteamGames(); } // if the game list is empty, index the games first
+                if (!hasIndexed) { indexSteamGames(); } // if the game list is empty, index the games first
 
                 foreach (GameStruct steamGame in steamGameList)
                 {
@@ -208,7 +212,7 @@ namespace Narod
             /// <exception cref="FileNotFoundException">Thrown if the game is not installed.</exception>
             public GameStruct getGameInfoByID(string gameID)
             {
-                if (steamGameList.Count == 0) { indexSteamGames(); } // if the game list is empty, index the games first
+                if (!hasIndexed) { indexSteamGames(); } // if the game list is empty, index the games first
 
                 foreach (GameStruct steamGame in steamGameList)
                 {
@@ -229,7 +233,7 @@ namespace Narod
             /// <exception cref="DirectoryNotFoundException">Thrown if game is not installed.</exception>
             public GameStruct getGameInfoByName(string gameName)
             {
-                if (steamGameList.Count == 0) { indexSteamGames(); } // if the game list is empty, index the games first
+                if (!hasIndexed) { indexSteamGames(); } // if the game list is empty, index the games first
                 foreach (GameStruct steamGame in steamGameList)
                 {
                     if (steamGame.steamGameName == gameName) { return steamGame; } // if game is already stored in our list, just return that instead
@@ -247,7 +251,7 @@ namespace Narod
             /// the <see cref="List{T}"/> will be empty.</returns>
             public List<GameStruct> getAllGames()
             {
-                if (steamGameList.Count == 0) { indexSteamGames(); } // if the game list is empty, index the games first
+                if (!hasIndexed) { indexSteamGames(); } // if the game list is empty, index the games first
                 return steamGameList; // return the list of games
             }
         }
