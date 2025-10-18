@@ -59,7 +59,7 @@ namespace Narod
             /// <exception cref="SecurityException">Thrown if unsufficient permissions to check Steam install.</exception>
             public bool getIsSteamInstalled() // function to return a boolean of whether steam is installed or not
             {
-                ConsoleLogger.printToConsole(_options.LogLevel, LogLevel.Information, "Returning if Steam is installed.");
+                if (_options.IndexSettings == IndexSettings.None) { steamInstalled = null; } // if user wishes to not index this, wipe the previous result at the start so we have a clean slate
                 if (steamInstalled != null) { return (bool)steamInstalled; } // if this information is already stored, let's use that instead
                 try // try statement, this could fail due to registry errors, or if the user does not have admin perms
                 {
@@ -85,6 +85,7 @@ namespace Narod
             /// <exception cref="SecurityException">Thrown if unsufficient permissions to check Steam install path.</exception>
             public string getSteamInstallLocation()
             {
+                if (_options.IndexSettings == IndexSettings.None) { steamInstalled = null; steamInstallPath = null; } // if user wishes to not index this, wipe the previous result at the start so we have a clean slate
                 if (steamInstalled == false) { if (_options.SuppressExceptions) { return null; } else { throw new DirectoryNotFoundException(); } } // if already checked if steam is installed and it isn't
                 if (steamInstallPath != null && Directory.Exists(steamInstallPath)) { return steamInstallPath; } // if this information is already stored, let's use that instead
                 try // try statement, this could fail due to registry errors, or if the user does not have admin perms
@@ -108,6 +109,7 @@ namespace Narod
             /// <remarks>This method only indexes the library locations once, and then returns a cached copy on subsequent runs.</remarks>
             public List<String> getSteamLibraryLocations()
             {
+                if (_options.IndexSettings == IndexSettings.None) { steamInstalled = null; steamInstallPath = null; steamLibraryList.Clear(); } // if user wishes to not index this, wipe the previous result at the start so we have a clean slate
                 if (steamLibraryList.Count != 0) { return steamLibraryList; } // if this information is already stored, let's use that instead
 
                 if (steamInstallPath == null) { getSteamInstallLocation(); } // if the steam install path has not already been fetched, fetch it
@@ -183,7 +185,7 @@ namespace Narod
                         steamGameList.Add(gameInfo); // add the game to our list
                     }
                 }
-                hasIndexed = true;
+                if (_options.IndexSettings == IndexSettings.Full) { hasIndexed = true; } // if we are allowing indexing, we'll set this to true, otherwise we won't set it, so other functions will think no indexing has happened and run it again
             }
 
             /// <summary>
