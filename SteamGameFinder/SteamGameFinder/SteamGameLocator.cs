@@ -12,6 +12,8 @@ namespace Narod
     {
         public class SteamGameLocator
         {
+            private readonly SteamGameLocatorOptions _options;
+
             private static string steamRegPath = "";
 
             private bool? steamInstalled = null;
@@ -21,7 +23,7 @@ namespace Narod
 
             private bool hasIndexed = false;
 
-            public SteamGameLocator()
+            public SteamGameLocator(SteamGameLocatorOptions options = null)
             {
                 // check if system is 32-bit or 64-bit, and set the registry path accordingly, Environ,ent.Is64BitOperatingSystem is unavailable in .NET 3.5
                 if (IntPtr.Size == 8 || Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE") == "AMD64")
@@ -32,6 +34,8 @@ namespace Narod
                 {
                     steamRegPath = "HKEY_LOCAL_MACHINE\\SOFTWARE\\Valve\\Steam"; // 32-bit registry path
                 }
+
+                _options = options ?? new SteamGameLocatorOptions();
             }
 
             /// <summary>
@@ -79,15 +83,15 @@ namespace Narod
             /// <exception cref="SecurityException">Thrown if unsufficient permissions to check Steam install path.</exception>
             public string getSteamInstallLocation()
             {
-                if (steamInstalled == false) { throw new DirectoryNotFoundException(); } // if already checked if steam is installed and it isn't
+                if (steamInstalled == false) { if (_options.SuppressExceptions) { return null; } else { throw new DirectoryNotFoundException(); } } // if already checked if steam is installed and it isn't
                 if (steamInstallPath != null && Directory.Exists(steamInstallPath)) { return steamInstallPath; } // if this information is already stored, let's use that instead
                 try // try statement, this could fail due to registry errors, or if the user does not have admin perms
                 {
                     steamInstallPath = RegistryHandler.safeGetRegistryKey("InstallPath", steamRegPath); // uses a safe way of getting the registry key
-                    if (steamInstallPath == null) { throw new DirectoryNotFoundException(); } // if the safe registry returner is null, then steam is not installed. throw directory not found exception
-                    if (Directory.Exists(steamInstallPath) == false) { throw new DirectoryNotFoundException(); } // if the folder location in the registry key is not on the system, then steam is not installed. throw directory not found exception
+                    if (steamInstallPath == null) { if (_options.SuppressExceptions) { return null; } else { throw new DirectoryNotFoundException(); } } // if the safe registry returner is null, then steam is not installed. throw directory not found exception
+                    if (Directory.Exists(steamInstallPath) == false) { if (_options.SuppressExceptions) { return null; } else { throw new DirectoryNotFoundException(); } } // if the folder location in the registry key is not on the system, then steam is not installed. throw directory not found exception
                 }
-                catch (ArgumentNullException) { throw new DirectoryNotFoundException(); } // unlikely to occur, but could be raised by safe registry returner, will return false as it would mean failed to find reg key
+                catch (ArgumentNullException) { throw; } // unlikely to occur, but could be raised by safe registry returner, will return false as it would mean failed to find reg key
                 catch (SecurityException) { throw; } // security exception, means user needs more perms. will throw this exception back to the program to resolve
                 catch (Exception) { throw; } // any other general exception - this should never occur but good practice to throw other exceptions back to program
                 return steamInstallPath; // if other 'guard if statements' are passed, then steam is accepted to be installed
@@ -198,7 +202,7 @@ namespace Narod
                     if (steamGame.steamGameLocation.EndsWith(gameName)) { return steamGame; } // if game is already stored in our list, just return that instead
                 }
 
-                throw new DirectoryNotFoundException("Game not found in Steam library. Please ensure the game is installed and try again."); // if we reach here, then the game was not found in our list, so throw an exception
+                if (_options.SuppressExceptions) { return new GameStruct(); } else { throw new DirectoryNotFoundException("Game not found in Steam library. Please ensure the game is installed and try again."); } // if we reach here, then the game was not found in our list, so throw an exception
             }
 
             /// <summary>
@@ -219,7 +223,7 @@ namespace Narod
                     if (steamGame.steamGameID == gameID) { return steamGame; } // if game is already stored in our list, just return that instead
                 }
 
-                throw new DirectoryNotFoundException("Game not found in Steam library. Please ensure the game is installed and try again."); // if we reach here, then the game was not found in our list, so throw an exception
+                if (_options.SuppressExceptions) { return new GameStruct(); } else { throw new DirectoryNotFoundException("Game not found in Steam library. Please ensure the game is installed and try again."); } // if we reach here, then the game was not found in our list, so throw an exception
             }
 
             /// <summary>
@@ -238,7 +242,7 @@ namespace Narod
                 {
                     if (steamGame.steamGameName == gameName) { return steamGame; } // if game is already stored in our list, just return that instead
                 }
-                throw new DirectoryNotFoundException("Game not found in Steam library. Please ensure the game is installed and try again."); // if we reach here, then the game was not found in our list, so throw an exception
+                if (_options.SuppressExceptions) { return new GameStruct(); } else { throw new DirectoryNotFoundException("Game not found in Steam library. Please ensure the game is installed and try again."); } // if we reach here, then the game was not found in our list, so throw an exception
             }
 
             /// <summary>
