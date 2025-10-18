@@ -1,4 +1,5 @@
 ﻿using Narod;
+using SteamGameFinder2;
 using System;
 using System.Collections.Generic;
 using System.IO;

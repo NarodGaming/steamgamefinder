@@ -1,4 +1,5 @@
 ﻿using Narod;
+using SteamGameFinder2;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -58,6 +59,7 @@ namespace Narod
             /// <exception cref="SecurityException">Thrown if unsufficient permissions to check Steam install.</exception>
             public bool getIsSteamInstalled() // function to return a boolean of whether steam is installed or not
             {
+                ConsoleLogger.printToConsole(_options.LogLevel, LogLevel.Information, "Returning if Steam is installed.");
                 if (steamInstalled != null) { return (bool)steamInstalled; } // if this information is already stored, let's use that instead
                 try // try statement, this could fail due to registry errors, or if the user does not have admin perms
                 {
