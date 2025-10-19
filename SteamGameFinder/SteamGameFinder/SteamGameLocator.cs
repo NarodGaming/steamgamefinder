@@ -92,6 +92,7 @@ namespace Narod
                     if (steamInstallPath == null) { if (_options.SuppressExceptions) { return null; } else { throw new DirectoryNotFoundException(); } } // if the safe registry returner is null, then steam is not installed. throw directory not found exception
                     if (Directory.Exists(steamInstallPath) == false) { if (_options.SuppressExceptions) { return null; } else { throw new DirectoryNotFoundException(); } } // if the folder location in the registry key is not on the system, then steam is not installed. throw directory not found exception
                 }
+                catch (ArgumentNullException) { if (_options.SuppressExceptions) { return null; } else { throw new DirectoryNotFoundException("Steam is not installed."); } }
                 catch (Exception) { throw; } // any other general exception - this should never occur but good practice to throw other exceptions back to program
                 return steamInstallPath; // if other 'guard if statements' are passed, then steam is accepted to be installed
             }
@@ -109,6 +110,7 @@ namespace Narod
                 if (steamLibraryList.Count != 0) { return steamLibraryList; } // if this information is already stored, let's use that instead
 
                 if (steamInstallPath == null) { getSteamInstallLocation(); } // if the steam install path has not already been fetched, fetch it
+                if (steamInstallPath == null) { return new List<string>(); } // can only occur if suppress exceptions is turned on, we need to check if it's still false and just provide an empty list back
 
                 StreamReader libraryVDFReader = File.OpenText(steamInstallPath + "\\steamapps\\libraryfolders.vdf");
                 string lineReader = libraryVDFReader.ReadLine();
@@ -152,6 +154,7 @@ namespace Narod
                 if (!_options.ShouldIndexLibrary) { return; } // prevent this from being run if we aren't allowing indexing
                 steamGameList.Clear();
                 getSteamLibraryLocations(); // ensure we have the library locations before indexing games
+                if (steamLibraryList.Count == 0) { if (_options.SuppressExceptions) { return; } else { throw new InvalidOperationException("Cannot index library with no libraries present."); } }
 
                 foreach (string libraryFolder in steamLibraryList)
                 {
@@ -202,6 +205,7 @@ namespace Narod
             private GameStruct getGameInfoByFolder_noIndex(string gameName)
             {
                 getSteamLibraryLocations(); // ensure we have the library locations before looking for games
+                if (steamLibraryList.Count == 0) { if (_options.SuppressExceptions) { return new GameStruct(); } else { throw new InvalidOperationException("Cannot search for games in no libraries."); } }
 
                 GameStruct gameInfo = new GameStruct();
                 gameInfo.steamGameName = gameName;
@@ -221,7 +225,7 @@ namespace Narod
 
             private GameStruct getGameInfoByFolder_index(string gameName)
             {
-                if (!hasIndexed) { indexSteamGames(); } // if the game list is empty, index the games first
+                if (!hasIndexed || _options.MemorySettings != MemorySettings.Full) { indexSteamGames(); } // if the game list is empty, index the games first
 
                 foreach (GameStruct steamGame in steamGameList)
                 {
@@ -245,7 +249,7 @@ namespace Narod
                 if (_options.ShouldIndexLibrary) { return getGameInfoByID_index(gameID); } else { return getGameInfoByID_noindex(gameID); }
             }
 
-            public GameStruct getGameInfoByID_noindex(string gameID)
+            private GameStruct getGameInfoByID_noindex(string gameID)
             {
                 string gameInstallDir = null;
                 string gameName = null;
@@ -260,9 +264,9 @@ namespace Narod
                 return new GameStruct() { steamGameID = gameID, steamGameLocation = gameInstallDir, steamGameName = gameName ?? "" };
             }
 
-            public GameStruct getGameInfoByID_index(string gameID)
+            private GameStruct getGameInfoByID_index(string gameID)
             {
-                if (!hasIndexed) { indexSteamGames(); } // if the game list is empty, index the games first
+                if (!hasIndexed || _options.MemorySettings != MemorySettings.Full) { indexSteamGames(); } // if the game list is empty, index the games first
 
                 foreach (GameStruct steamGame in steamGameList)
                 {
@@ -284,7 +288,7 @@ namespace Narod
             public GameStruct getGameInfoByName(string gameName)
             {
                 if (!_options.ShouldIndexLibrary) { throw new InvalidOperationException("Unable to locate by game name when indexing is disabled. Either enable indexing, or search by folder name / Steam App ID."); } // this isn't possible if you have disabled indexing, so an exception will be thrown
-                if (!hasIndexed) { indexSteamGames(); } // if the game list is empty, index the games first
+                if (!hasIndexed || _options.MemorySettings != MemorySettings.Full) { indexSteamGames(); } // if the game list is empty, index the games first
                 foreach (GameStruct steamGame in steamGameList)
                 {
                     if (steamGame.steamGameName == gameName) { return steamGame; } // if game is already stored in our list, just return that instead
@@ -303,7 +307,7 @@ namespace Narod
             public List<GameStruct> getAllGames()
             {
                 if (!_options.ShouldIndexLibrary) { throw new InvalidOperationException("Unable to return all games when indexing is disabled. Enable indexing to use this function."); } // this isn't possible if you have disabled indexing, so an exception will be thrown
-                if (!hasIndexed) { indexSteamGames(); } // if the game list is empty, index the games first
+                if (!hasIndexed || _options.MemorySettings != MemorySettings.Full) { indexSteamGames(); } // if the game list is empty, index the games first
                 return steamGameList; // return the list of games
             }
         }
