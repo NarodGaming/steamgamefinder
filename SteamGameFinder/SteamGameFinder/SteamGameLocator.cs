@@ -67,7 +67,6 @@ namespace Narod
                     if (Directory.Exists(steamInstallPath) == false) { steamInstalled = false; return (bool)steamInstalled; } // if the folder location in the registry key is not on the system, then steam is not installed
                 }
                 catch (ArgumentNullException) { steamInstalled = false; return (bool)steamInstalled; } // unlikely to occur, but could be raised by safe registry returner, will return false as it would mean failed to find reg key
-                catch (SecurityException) { throw; } // security exception, means user needs more perms. will throw this exception back to the program to resolve
                 catch (Exception) { throw; } // any other general exception - this should never occur but good practice to throw other exceptions back to program
                 steamInstalled = true;
                 return (bool)steamInstalled; // if other 'guard if statements' are passed, then steam is accepted to be installed
@@ -93,8 +92,6 @@ namespace Narod
                     if (steamInstallPath == null) { if (_options.SuppressExceptions) { return null; } else { throw new DirectoryNotFoundException(); } } // if the safe registry returner is null, then steam is not installed. throw directory not found exception
                     if (Directory.Exists(steamInstallPath) == false) { if (_options.SuppressExceptions) { return null; } else { throw new DirectoryNotFoundException(); } } // if the folder location in the registry key is not on the system, then steam is not installed. throw directory not found exception
                 }
-                catch (ArgumentNullException) { throw; } // unlikely to occur, but could be raised by safe registry returner, will return false as it would mean failed to find reg key
-                catch (SecurityException) { throw; } // security exception, means user needs more perms. will throw this exception back to the program to resolve
                 catch (Exception) { throw; } // any other general exception - this should never occur but good practice to throw other exceptions back to program
                 return steamInstallPath; // if other 'guard if statements' are passed, then steam is accepted to be installed
             }
@@ -152,6 +149,7 @@ namespace Narod
             /// list.</remarks>
             public void indexSteamGames()
             {
+                if (!_options.ShouldIndexLibrary) { return; } // prevent this from being run if we aren't allowing indexing
                 steamGameList.Clear();
                 getSteamLibraryLocations(); // ensure we have the library locations before indexing games
 
@@ -198,6 +196,31 @@ namespace Narod
             /// <exception cref="DirectoryNotFoundException">Thrown if the game is not installed.</exception>
             public GameStruct getGameInfoByFolder(string gameName)
             {
+                if (_options.ShouldIndexLibrary) { return getGameInfoByFolder_index(gameName); } else { return getGameInfoByFolder_noIndex(gameName); }
+            }
+
+            private GameStruct getGameInfoByFolder_noIndex(string gameName)
+            {
+                getSteamLibraryLocations(); // ensure we have the library locations before looking for games
+
+                GameStruct gameInfo = new GameStruct();
+                gameInfo.steamGameName = gameName;
+                gameInfo.steamGameID = "0"; // not used
+
+                foreach (string libraryFolder in steamLibraryList)
+                {
+                    string checkFolder = libraryFolder + "\\steamapps\\common\\" + gameName;
+
+                    if (Directory.Exists(checkFolder)) { gameInfo.steamGameLocation = checkFolder; break; }
+                }
+
+                if (gameInfo.steamGameLocation != null) { return gameInfo; }
+
+                if (_options.SuppressExceptions) { return new GameStruct(); } else { throw new DirectoryNotFoundException("Game not found in Steam library. Please ensure the game is installed and try again."); } // if we reach here, then the game was not found, so throw an exception
+            }
+
+            private GameStruct getGameInfoByFolder_index(string gameName)
+            {
                 if (!hasIndexed) { indexSteamGames(); } // if the game list is empty, index the games first
 
                 foreach (GameStruct steamGame in steamGameList)
@@ -218,6 +241,26 @@ namespace Narod
             /// <returns>A single <see cref="GameStruct"/> object of the game.</returns>
             /// <exception cref="FileNotFoundException">Thrown if the game is not installed.</exception>
             public GameStruct getGameInfoByID(string gameID)
+            {
+                if (_options.ShouldIndexLibrary) { return getGameInfoByID_index(gameID); } else { return getGameInfoByID_noindex(gameID); }
+            }
+
+            public GameStruct getGameInfoByID_noindex(string gameID)
+            {
+                string gameInstallDir = null;
+                string gameName = null;
+                try
+                {
+                    gameInstallDir = RegistryHandler.safeGetRegistryKey("InstallLocation", $"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App {gameID}");
+                    gameName = RegistryHandler.safeGetRegistryKey("DisplayName", $"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App {gameID}");
+                }
+                catch (ArgumentNullException) { if (_options.SuppressExceptions) { return new GameStruct(); } else { throw new DirectoryNotFoundException("Game not found in Steam Library. Please ensure the game is installed and try again."); } }
+                if (gameInstallDir == null) { if (_options.SuppressExceptions) { return new GameStruct(); } else { throw new DirectoryNotFoundException("Game not found in Steam Library. Please ensure the game is installed and try again. Sometimes Steam does not correctly update the registry, use a different search or enable indexing to resolve these cases."); } }
+
+                return new GameStruct() { steamGameID = gameID, steamGameLocation = gameInstallDir, steamGameName = gameName ?? "" };
+            }
+
+            public GameStruct getGameInfoByID_index(string gameID)
             {
                 if (!hasIndexed) { indexSteamGames(); } // if the game list is empty, index the games first
 
@@ -240,6 +283,7 @@ namespace Narod
             /// <exception cref="DirectoryNotFoundException">Thrown if game is not installed.</exception>
             public GameStruct getGameInfoByName(string gameName)
             {
+                if (!_options.ShouldIndexLibrary) { throw new InvalidOperationException("Unable to locate by game name when indexing is disabled. Either enable indexing, or search by folder name / Steam App ID."); } // this isn't possible if you have disabled indexing, so an exception will be thrown
                 if (!hasIndexed) { indexSteamGames(); } // if the game list is empty, index the games first
                 foreach (GameStruct steamGame in steamGameList)
                 {
@@ -258,6 +302,7 @@ namespace Narod
             /// the <see cref="List{T}"/> will be empty.</returns>
             public List<GameStruct> getAllGames()
             {
+                if (!_options.ShouldIndexLibrary) { throw new InvalidOperationException("Unable to return all games when indexing is disabled. Enable indexing to use this function."); } // this isn't possible if you have disabled indexing, so an exception will be thrown
                 if (!hasIndexed) { indexSteamGames(); } // if the game list is empty, index the games first
                 return steamGameList; // return the list of games
             }
