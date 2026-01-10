@@ -14,7 +14,7 @@ namespace Narod
         {
             private readonly SteamGameLocatorOptions _options;
 
-            private static string steamRegPath = "";
+            private static string steamRegPath;
 
             private bool? steamInstalled = null;
             private string steamInstallPath = null;
@@ -251,17 +251,45 @@ namespace Narod
 
             private GameStruct getGameInfoByID_noindex(string gameID)
             {
-                string gameInstallDir = null;
-                string gameName = null;
-                try
-                {
-                    gameInstallDir = RegistryHandler.safeGetRegistryKey("InstallLocation", $"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App {gameID}");
-                    gameName = RegistryHandler.safeGetRegistryKey("DisplayName", $"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App {gameID}");
-                }
-                catch (ArgumentNullException) { if (_options.SuppressExceptions) { return new GameStruct(); } else { throw new DirectoryNotFoundException("Game not found in Steam Library. Please ensure the game is installed and try again."); } }
-                if (gameInstallDir == null) { if (_options.SuppressExceptions) { return new GameStruct(); } else { throw new DirectoryNotFoundException("Game not found in Steam Library. Please ensure the game is installed and try again. Sometimes Steam does not correctly update the registry, use a different search or enable indexing to resolve these cases."); } }
+                getSteamLibraryLocations(); // ensure we have the library locations before looking for games
+                if (steamLibraryList.Count == 0) { if (_options.SuppressExceptions) { return new GameStruct(); } else { throw new InvalidOperationException("Cannot search for games in no libraries."); } }
 
-                return new GameStruct() { steamGameID = gameID, steamGameLocation = gameInstallDir, steamGameName = gameName ?? "" };
+                GameStruct gameInfo = new GameStruct();
+                gameInfo.steamGameName = ""; // not used
+                gameInfo.steamGameID = gameID;
+
+                foreach (string libraryFolder in steamLibraryList)
+                {
+                    string checkAcf = libraryFolder + $"\\steamapps\\appmanifest_{gameID}.acf";
+
+                    if (File.Exists(checkAcf)) {
+                        StreamReader acfReader = File.OpenText(checkAcf);
+                        string lineReader = acfReader.ReadLine();
+                        while (lineReader != null)
+                        {
+                            if (lineReader.Contains("name")) // looks like: "name"		"Game Name"
+                            {
+                                string cleanLine = lineReader.Replace("\"name\"", ""); // we then clean this up by removing the name part, leaving us with:         "Game Name"
+                                cleanLine = cleanLine.Split('"')[1]; // we then remove the leading spaces and quotes to get: Game Name
+                                gameInfo.steamGameName = cleanLine; // set the name
+                            }
+                            if (lineReader.Contains("installdir"))
+                            {
+                                string cleanLine = lineReader.Replace("\"installdir\"", ""); // we then clean this up by removing the installdir part, leaving us with:         "Game Folder Name"
+                                cleanLine = cleanLine.Split('"')[1]; // we then remove the leading spaces and quotes to get: Game Folder Name
+                                gameInfo.steamGameLocation = libraryFolder + "\\steamapps\\common\\" + cleanLine; // set the location
+                                break;
+                            }
+                            lineReader = acfReader.ReadLine();
+                        }
+                        break; 
+                    }
+                }
+
+                if (gameInfo.steamGameLocation != null) { return gameInfo; }
+
+                if (_options.SuppressExceptions) { return new GameStruct(); } else { throw new DirectoryNotFoundException("Game not found in Steam library. Please ensure the game is installed and try again."); } // if we reach here, then the game was not found, so throw an exception
+
             }
 
             private GameStruct getGameInfoByID_index(string gameID)
