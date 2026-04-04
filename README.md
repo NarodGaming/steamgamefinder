@@ -14,7 +14,7 @@ For .NET 3.5+ users, use SteamGameFinder.dll
 ## Usage
 [Use the wiki](https://github.com/NarodGaming/steamgamefinder/wiki), it's comprehensive in explaining each function, exceptions, arguments, and so on. Code examples are in C# & VB.NET
 
-## Further Help
+## Program Example
 You can find the 'TestApp' solution in this repository which has an example of how to use the library.
 
 ## Helping
